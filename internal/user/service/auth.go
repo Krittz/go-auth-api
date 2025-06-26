@@ -2,13 +2,14 @@ package service
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"go-auth-api/internal/user/dto"
 	"go-auth-api/internal/user/model"
 	"go-auth-api/internal/user/repository"
 	"go-auth-api/pkg/config"
 	"go-auth-api/pkg/utils"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthService struct {
@@ -56,4 +57,8 @@ func (s *AuthService) Login(req *dto.LoginRequest, cfg *config.Config) (string, 
 	}
 
 	return tokenString, nil
+}
+
+func (s *AuthService) GetUserByID(id int64) (*model.User, error) {
+	return s.repo.FindByID(id)
 }

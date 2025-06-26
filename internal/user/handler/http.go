@@ -3,6 +3,7 @@ package handler
 import (
 	"database/sql"
 	"encoding/json"
+	"go-auth-api/internal/middleware"
 	"go-auth-api/internal/user/dto"
 	"go-auth-api/internal/user/repository"
 	"go-auth-api/internal/user/service"
@@ -62,4 +63,38 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message":"Autenticado com sucesso"}`))
+}
+
+func (h *AuthHandler) MeHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Usuário não autenticado", http.StatusUnauthorized)
+		return
+	}
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		return
+	}
+	resp := map[string]string{
+		"name":  user.Name,
+		"email": user.Email,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Logout realizado com sucesso."))
 }

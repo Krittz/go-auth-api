@@ -15,6 +15,8 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"go-auth-api/internal/user/handler"
+
+	authmiddleware "go-auth-api/internal/middleware"
 )
 
 func main() {
@@ -30,6 +32,8 @@ func main() {
 	}
 	defer db.Close()
 
+	authHandler := handler.NewAuthHandler(db)
+
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
@@ -43,16 +47,19 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	authHandler := handler.NewAuthHandler(db)
-
 	//Teste de rota viva
-
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("🔥 API viva e rodando!"))
 	})
 
 	r.Post("/signup", authHandler.SignupHandler)
 	r.Post("/login", authHandler.LoginHandler)
+	r.Post("/logout", authHandler.LogoutHandler)
+
+	r.Group(func(r chi.Router) {
+		r.Use(authmiddleware.RequireAuth)
+		r.Get("/me", authHandler.MeHandler)
+	})
 
 	fmt.Println("Servidor rodando na porta", cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))
